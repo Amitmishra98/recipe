@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gourmet Recipe Explorer 🍳</title>
+
+  <!-- Font Awesome for YouTube Icon -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #e0c3fc, #8ec5fc);
+      margin: 0;
+      padding: 20px;
+      transition: background 0.5s, color 0.5s;
+    }
+    .dark {
+      background: #121212;
+      color: #fff;
+    }
+    h1 {
+      text-align: center;
+      color: #4b0082;
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+    .search-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    input[type="text"] {
+      padding: 12px;
+      border: 2px solid #4b0082;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 350px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 12px 24px;
+      background-color: #4b0082;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.1em;
+      max-width: 200px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #5a00a3;
+    }
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s;
+      cursor: pointer;
+    }
+    .dark .card {
+      background: #1e1e1e;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    /* YouTube Icon Styling */
+    .youtube-icon {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 3em;
+      color: red;  /* Red color for the YouTube icon */
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .youtube-icon:hover {
+      color: white; /* Change color to white on hover */
+    }
+  </style>
+</head>
+<body>
+  <h1>🍽️ Gourmet Recipe Explorer 🍳</h1>
+
+  <!-- YouTube Icon -->
+  <a href="https://www.youtube.com/@howtocookmeal" target="_blank">
+    <i class="fa fa-youtube-play youtube-icon" aria-hidden="true"></i>
+  </a>
+
+  <div class="search-container">
+    <input type="text" id="search-input" placeholder="Search for delicious recipes...">
+    <button onclick="searchRecipes()">Search</button>
+    <button onclick="toggleDarkMode()">Dark Mode</button>
+  </div>
+  <div class="recipe-grid" id="recipe-grid"></div>
+
+  <div id="modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h2 id="modal-title"></h2>
+      <img id="modal-image" style="width: 100%; border-radius: 10px;" />
+      <p id="modal-instructions"></p>
+      <a id="modal-link" target="_blank">View Full Recipe</a>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript functions remain the same
+    const recipeGrid = document.getElementById('recipe-grid');
+    const modal = document.getElementById('modal');
+    const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+    function searchRecipes() {
+      const query = document.getElementById('search-input').value;
+      recipeGrid.innerHTML = '<p>Loading recipes...</p>';
+
+      fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`)
+        .then(response => response.json())
+        .then(data => {
+          recipeGrid.innerHTML = '';
+          (data.meals || []).forEach(meal => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+              <img src="${meal.strMealThumb}" style="width: 100%; border-radius: 10px;">
+              <h3>${meal.strMeal}</h3>
+              <button onclick="toggleFavorite(event, '${meal.idMeal}', '${meal.strMeal}', '${meal.strMealThumb}')">
+                ${favorites.some(f => f.idMeal === meal.idMeal) ? 'Remove from Favorites' : 'Add to Favorites'}
+              </button>
+            `;
+            card.onclick = () => showModal(meal);
+            recipeGrid.appendChild(card);
+          });
+        });
+    }
+
+    function showModal(meal) {
+      document.getElementById('modal-title').innerText = meal.strMeal;
+      document.getElementById('modal-image').src = meal.strMealThumb;
+      document.getElementById('modal-instructions').innerText = meal.strInstructions;
+      document.getElementById('modal-link').href = meal.strSource || meal.strYoutube;
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    function toggleFavorite(event, idMeal, strMeal, strMealThumb) {
+      event.stopPropagation();
+      const index = favorites.findIndex(fav => fav.idMeal === idMeal);
+
+      if (index > -1) {
+        favorites.splice(index, 1);
+      } else {
+        favorites.push({ idMeal, strMeal, strMealThumb });
+      }
+
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+      searchRecipes();
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+    }
+  </script>
+</body>
+</html>
